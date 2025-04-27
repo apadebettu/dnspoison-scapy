@@ -56,7 +56,12 @@ def file_to_dict(file):
     Read hostnames file and build a mapping: hostname -> IP
     Example line in file: 1.2.3.4 www.google.com
     """
-    # TODO:
+    with open(file, 'r') as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) == 2:
+                ip, hostname = parts
+                dns_map[hostname.strip('.')] = ip
 
 
 def dns_spoof(pkt):
