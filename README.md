@@ -1,14 +1,12 @@
 # dnspoison
 
-*A lightweight DNS cache poisoning tool built with Scapy, designed for educational use and security research.*
+*A lightweight DNS cache poisoning tool built with Scapy*
 
 ---
 
 ## Overview
 
 `dnspoison` captures DNS A record queries on a network interface and injects forged DNS responses to selected target hostnames, aiming to poison the victim's resolver cache.
-
-This project was developed as part of the **CS 360 (Information Technology)** course at the **University of Massachusetts**.
 
 ---
 
@@ -49,7 +47,9 @@ Each line in the `hostnames.txt` file should have:
 
 **Example:**
 
-165.22.4.26 www.testvictim.com 165.22.4.26 www.example.com
+165.22.4.26 www.testvictim.com 
+
+165.22.4.26 www.example.com
 
 
 If `-f` is not specified, `dnspoison` will forge responses for all observed DNS queries using the default attacker IP (`165.22.4.26`).
@@ -60,14 +60,11 @@ If `-f` is not specified, `dnspoison` will forge responses for all observed DNS 
 
 ### Test Setup
 
-1. Start Wireshark with a capture filter:
-   
-udp port 53
-
+1. Start Wireshark with a capture filter: udp port 53
 2. Launch `dnspoison.py`
 3. Trigger DNS requests on a separate terminal (e.g., using `dig` or `nslookup`):
 
-dig www.testvictim.com
+**Example:** dig www.testvictim.com
 
 
 ### Wireshark Display Filter for Verification
