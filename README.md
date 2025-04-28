@@ -22,8 +22,9 @@
 
 ## Usage
 
+```bash
 sudo python3 dnspoison.py [-i interface] [-f hostnames_file] [expression]
-
+```
 
 ### Arguments
 
@@ -33,8 +34,9 @@ sudo python3 dnspoison.py [-i interface] [-f hostnames_file] [expression]
 
 ### Example
 
+```bash
 sudo python3 dnspoison.py -i en0 -f hostnames.txt
-
+```
 
 ---
 
@@ -42,15 +44,16 @@ sudo python3 dnspoison.py -i en0 -f hostnames.txt
 
 Each line in the `hostnames.txt` file should have:
 
+```
 <IP_ADDRESS> <HOSTNAME>
+```
 
+### Example:
 
-**Example:**
-
-165.22.4.26 www.testvictim.com 
-
+```
+165.22.4.26 www.testvictim.com
 165.22.4.26 www.example.com
-
+```
 
 If `-f` is not specified, `dnspoison` will forge responses for all observed DNS queries using the default attacker IP (`165.22.4.26`).
 
@@ -60,17 +63,24 @@ If `-f` is not specified, `dnspoison` will forge responses for all observed DNS 
 
 ### Test Setup
 
-1. Start Wireshark with a capture filter: udp port 53
+1. Start Wireshark with a capture filter:
+   ```
+   udp port 53
+   ```
 2. Launch `dnspoison.py`
 3. Trigger DNS requests on a separate terminal (e.g., using `dig` or `nslookup`):
 
-**Example:** dig www.testvictim.com
+**Example:**
 
+```bash
+dig www.testvictim.com
+```
 
 ### Wireshark Display Filter for Verification
 
+```
 dns.qry.name == "www.testvictim.com"
-
+```
 
 A successful poisoning shows:
 
@@ -81,17 +91,16 @@ A successful poisoning shows:
 
 ## Example Output
 
-[*] Listening on en0, filter='udp port 53' [+] Spoofing response for www.testvictim.com -> 165.22.4.26
-
+```bash
+[*] Listening on en0, filter='udp port 53'
+[+] Spoofing response for www.testvictim.com -> 165.22.4.26
+```
 
 In Wireshark, you will see:
 
-> Standard query response 0x1234 A www.testvictim.com A 165.22.4.26
+```
+Standard query response 0x1234 A www.testvictim.com A 165.22.4.26
+```
 
 ---
-
-
-
-
-
 
