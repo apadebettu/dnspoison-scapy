@@ -1,0 +1,6 @@
+165.22.4.26 foo.example.com
+165.22.4.26 bar.example.com
+165.22.4.26 www.cs.umass.edu
+165.22.4.26 www.testvictim.com
+165.22.4.26 www.google.com
+165.22.4.26 www.cnn.com
